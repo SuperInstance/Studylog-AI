@@ -1,33 +1,36 @@
-name: Worker CI
+name: CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 concurrency:
-  group: worker-ci-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy-dry-run:
-    name: Type-check & Dry-run
+  check:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: npm
+          node-version: 22
+          cache: pnpm
 
-      - name: Install dependencies
-        run: npm install
+      - run: pnpm install --frozen-lockfile
 
-      - name: Type-check
+      - name: Prettier
+        run: pnpm check
+
+      - name: ESLint
+        run: pnpm lint
+
+      - name: TypeScript
         run: npx tsc --noEmit
-
-      - name: Dry-run deploy
-        run: npx wrangler deploy --dry-run
